@@ -1,8 +1,5 @@
 const express = require('express')
 const { Readable } = require('stream')
-const { execSync } = require('child_process')
-const fs = require('fs')
-const path = require('path')
 
 const app = express()
 app.use(require('cors')())
@@ -23,23 +20,14 @@ app.post('/api/chat', async (req, res) => {
 })
 
 app.get('/api/tts', async (req, res) => {
-  const text = (req.query.text || 'Hello').replace(/['"\\]/g, '')
-  const tmpFile = path.join('/tmp', 'tts_' + Date.now() + '.mp3')
   try {
-    const safe = text.replace(/'/g, "'\\''")
-    execSync(`python3 -c "import asyncio,edge_tts;asyncio.run(edge_tts.Communicate('${safe}','en-US-AndrewNeural').save('${tmpFile}'))"`, { timeout: 30000 })
-    if (fs.existsSync(tmpFile)) {
-      const audio = fs.readFileSync(tmpFile)
-      res.setHeader('Content-Type', 'audio/mpeg')
-      res.send(audio)
-      fs.unlink(tmpFile, () => {})
-    } else {
-      res.status(500).send('TTS failed')
-    }
-  } catch (e) {
-    res.status(500).send('TTS error')
-    try { fs.unlinkSync(tmpFile) } catch(_) {}
-  }
+    const text = encodeURIComponent(req.query.text || 'Hello')
+    const r = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&q=${text}&tl=en&client=tw-ob`)
+    if (!r.ok) throw Error('HTTP ' + r.status)
+    const buf = Buffer.from(await r.arrayBuffer())
+    res.setHeader('Content-Type', 'audio/mpeg')
+    res.send(buf)
+  } catch (e) { res.status(500).send('TTS error') }
 })
 
 const PORT = process.env.PORT || 4001
