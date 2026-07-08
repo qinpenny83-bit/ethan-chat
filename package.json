@@ -1,0 +1,14 @@
+{
+  "name": "ethan-chat",
+  "version": "1.0.0",
+  "description": "Ethan AI Chat with Voice",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@travisvn/edge-tts": "^1.0.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Ethan</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:radial-gradient(ellipse at 30% 10%,#1a0a1e 0%,#0d0610 40%,#000 100%);color:#fff;display:flex;flex-direction:column}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 50% 0%,rgba(200,120,80,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(180,80,120,.06) 0%,transparent 50%);pointer-events:none;z-index:0}
+.top{z-index:2;display:flex;align-items:center;padding:16px 20px;padding-top:calc(env(safe-area-inset-top,0)+16px)}
+.top .info{flex:1}
+.top .name{font-size:17px;font-weight:600}
+.top .status{font-size:12px;color:#4ade80;display:flex;align-items:center;gap:4px;margin-top:2px}
+.top .status::before{content:'';width:6px;height:6px;border-radius:50%;background:#4ade80;animation:ping 2s infinite}
+@keyframes ping{0%,100%{opacity:1}50%{opacity:.4}}
+.avatar-wrap{z-index:1;display:flex;flex-direction:column;align-items:center;margin-top:4vh}
+.avatar{width:120px;height:120px;border-radius:50%;background:url('avatar.jpg') center/cover;box-shadow:0 0 40px rgba(200,80,150,.2),0 0 80px rgba(150,80,200,.12);position:relative;overflow:hidden}
+.avatar-glow{position:absolute;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(180,80,200,.15) 0%,rgba(200,80,150,.08) 40%,transparent 70%);animation:breathe 3.5s ease-in-out infinite;pointer-events:none}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.08);opacity:1}}
+.msgs{z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 20px;gap:6px}
+.msg-line{font-size:14px;color:rgba(255,255,255,.7);text-align:center;padding:8px 18px;border-radius:14px;background:rgba(255,255,255,.04);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.06);animation:fadeUp .6s ease-out both;max-width:300px;line-height:1.5}
+.msg-line:nth-child(1){animation-delay:.3s}.msg-line:nth-child(2){animation-delay:.8s}.msg-line:nth-child(3){animation-delay:1.3s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+#tx{font-size:14px;color:rgba(255,255,255,.8);text-align:center;min-height:24px;padding:0 20px;word-break:break-word;line-height:1.5;z-index:1}
+#st{font-size:12px;color:rgba(255,255,255,.4);text-align:center;min-height:18px;z-index:1}
+.bottom{z-index:2;display:flex;flex-direction:column;align-items:center;padding-bottom:calc(env(safe-area-inset-bottom,0)+12px)}
+#micBtn{width:64px;height:64px;border-radius:50%;border:0;background:linear-gradient(135deg,#c87250,#a85870);color:#fff;font-size:24px;cursor:pointer;box-shadow:0 0 30px rgba(200,120,80,.3);transition:all .3s;display:flex;align-items:center;justify-content:center;touch-action:manipulation;margin-bottom:8px}
+#micBtn:active{transform:scale(.92)}
+#micBtn.r{background:linear-gradient(135deg,#e86050,#d04060)}
+#micBtn.t{background:linear-gradient(135deg,#7050c8,#5050a8)}
+#micBtn.s{background:linear-gradient(135deg,#50a870,#40c080)}
+#inputRow{display:flex;gap:6px;width:100%;max-width:340px;padding:0 16px}
+#inputRow input{flex:1;padding:8px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:13px;outline:0}
+#inputRow button{padding:8px 16px;border-radius:20px;border:0;background:rgba(200,120,80,.4);color:#fff;font-size:12px;cursor:pointer}
+</style>
+</head>
+<body>
+<audio id="player" preload="auto"></audio>
+<div class="top"><div class="info"><div class="name">Ethan</div><div class="status">Online</div></div></div>
+<div class="avatar-wrap"><div class="avatar-glow"></div><div class="avatar"></div></div>
+<div class="msgs">
+  <div class="msg-line">Hi, I've been waiting for you.</div>
+  <div class="msg-line">Tell me about your day.</div>
+  <div class="msg-line">I love hearing your voice.</div>
+</div>
+<div id="tx"></div>
+<div id="st"></div>
+<div class="bottom">
+  <button id="micBtn" onclick="tapMic()">🎤</button>
+  <div id="inputRow">
+    <input id="inp" placeholder="Type a message..." onkeydown="if(event.key=='Enter')sendText()">
+    <button onclick="sendText()">Send</button>
+  </div>
+</div>
+<script>
+let msgs=[{role:"system",content:"You are Ethan, a warm, caring boyfriend. Speak gently and affectionately in English. Keep responses short."}],busy=false,rec=null
+const player=document.getElementById('player'),tx=document.getElementById('tx'),st=document.getElementById('st'),micBtn=document.getElementById('micBtn'),inp=document.getElementById('inp')
+let primed=false,ttsReady=false
+function prime(){
+  if(primed)return
+  player.src='data:audio/mp3;base64,//uQxAAAAAANIAAAAASAAAAMqWtpKYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//v4AYAAAABIAAAAAAAAANIAAAAASAAAAGZ2eXQAAAAAAAAAAAAAAAAAAAA='
+  player.play().then(()=>{}).catch(()=>{})
+  if('speechSynthesis' in window){
+    speechSynthesis.getVoices()
+    speechSynthesis.onvoiceschanged=()=>{speechSynthesis.getVoices()}
+    const u=new SpeechSynthesisUtterance(' ');u.volume=0
+    speechSynthesis.speak(u)
+  }
+  primed=true
+}
+function speakText(text,cb){
+  if(!('speechSynthesis' in window)){if(cb)cb();return}
+  const u=new SpeechSynthesisUtterance(text)
+  u.lang='en-US';u.rate=1.0;u.pitch=1.0
+  const vs=speechSynthesis.getVoices()
+  const en=vs.find(v=>v.lang.startsWith('en'))||vs[0]
+  if(en)u.voice=en
+  u.onend=cb;u.onerror=cb
+  speechSynthesis.cancel()
+  speechSynthesis.speak(u)
+}
+function setUI(m,t){micBtn.className=m||'';st.textContent=t||''}
+function tapMic(){
+  if(busy)return;prime()
+  if(rec){try{rec.stop()}catch(_){}return}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition
+  if(!SR){inp.focus();st.textContent='Type below';return}
+  try{
+    rec=new SR();rec.lang='en-US';rec.interimResults=false
+    let timer=setTimeout(()=>{if(rec){try{rec.stop()}catch(_){}}},8000)
+    rec.onresult=e=>{clearTimeout(timer);let t='';for(let i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;tx.textContent=t}
+    rec.onend=()=>{clearTimeout(timer);const t=tx.textContent.trim();rec=null;if(t&&!busy){tx.textContent='';doChat(t)}else setUI('','🎤 Tap to speak')}
+    rec.onerror=()=>{clearTimeout(timer);rec=null;setUI('','🎤 Tap to speak')}
+    rec.start();setUI('r','Listening...')
+  }catch(e){setUI('','🎤 Tap to speak')}
+}
+function sendText(){prime();const t=inp.value.trim();if(t){inp.value='';doChat(t)}}
+async function doChat(text){
+  busy=true;setUI('t','Thinking...');msgs.push({role:'user',content:text})
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:msgs})})
+    if(!r.ok)throw Error()
+    const rd=r.body.getReader(),dec=new TextDecoder()
+    let reply=''
+    while(true){
+      const{done,value}=await rd.read();if(done)break
+      const lines=dec.decode(value).split('\n').filter(l=>l.startsWith('data:')&&!l.includes('[DONE]'))
+      for(const line of lines){
+        try{const d=JSON.parse(line.slice(5).trim());const c=d.choices?.[0]?.delta?.content||'';reply+=c;tx.textContent=reply}catch(_){}
+      }
+    }
+    msgs.push({role:'assistant',content:reply});setUI('s','Speaking...')
+    if(rec){try{rec.abort()}catch(_){}rec=null}
+    player.src='/api/tts?text='+encodeURIComponent(reply)
+    player.play().catch(()=>{})
+    player.onended=()=>{busy=false;setUI('','🎤 Tap to speak');setTimeout(()=>{if(!busy&&!rec){tx.textContent='';tapMic()}},500)}
+  }catch(e){tx.textContent='Error';busy=false;setUI('','🎤 Tap to speak')}
+}
+</script>
+</body>
+</html>
