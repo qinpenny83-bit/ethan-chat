@@ -1,3 +1,0 @@
-[deploy]
-buildCommand = "npm install && pip3 install edge-tts"
-startCommand = "node server.js"
