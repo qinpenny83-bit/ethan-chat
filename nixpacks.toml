@@ -1,0 +1,5 @@
+[phases.setup]
+nixPkgs = ["python3", "python311Packages.pip"]
+
+[phases.install]
+cmds = ["pip3 install edge-tts"]
