@@ -1,6 +1,8 @@
 const express = require('express')
 const { Readable } = require('stream')
-const { EdgeTTS } = require('@travisvn/edge-tts')
+const { execSync } = require('child_process')
+const fs = require('fs')
+const path = require('path')
 
 const app = express()
 app.use(require('cors')())
@@ -21,12 +23,23 @@ app.post('/api/chat', async (req, res) => {
 })
 
 app.get('/api/tts', async (req, res) => {
+  const text = (req.query.text || 'Hello').replace(/['"\\]/g, '')
+  const tmpFile = path.join('/tmp', 'tts_' + Date.now() + '.mp3')
   try {
-    const tts = new EdgeTTS(req.query.text || 'Hello', 'en-US-AndrewNeural', { rate: '+0%', volume: '+0%', pitch: '+0Hz' })
-    const audio = await tts.synthesize()
-    res.setHeader('Content-Type', 'audio/mpeg')
-    res.send(Buffer.from(audio))
-  } catch (e) { res.status(500).send('Error') }
+    const safe = text.replace(/'/g, "'\\''")
+    execSync(`python3 -c "import asyncio,edge_tts;asyncio.run(edge_tts.Communicate('${safe}','en-US-AndrewNeural').save('${tmpFile}'))"`, { timeout: 30000 })
+    if (fs.existsSync(tmpFile)) {
+      const audio = fs.readFileSync(tmpFile)
+      res.setHeader('Content-Type', 'audio/mpeg')
+      res.send(audio)
+      fs.unlink(tmpFile, () => {})
+    } else {
+      res.status(500).send('TTS failed')
+    }
+  } catch (e) {
+    res.status(500).send('TTS error')
+    try { fs.unlinkSync(tmpFile) } catch(_) {}
+  }
 })
 
 const PORT = process.env.PORT || 4001
